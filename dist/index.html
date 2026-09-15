@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101826">
+  <meta name="description" content="查詢台北市路邊收費機車停車格的路段、範圍與收費時間。">
+  <title>台北路邊機車收費格</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">台北市・路邊・機車</p>
+      <h1>收費停車格查詢</h1>
+    </div>
+    <a class="source-link" href="https://pma.gov.taipei/Content_List.aspx?n=0EC7D6A1032AA0D6" target="_blank" rel="noreferrer">官方資料</a>
+  </header>
+
+  <main>
+    <section class="search-panel" aria-label="搜尋條件">
+      <label class="search-box">
+        <span aria-hidden="true">⌕</span>
+        <input id="search" type="search" inputmode="search" autocomplete="off" placeholder="搜尋路名、捷運站或商圈" aria-label="搜尋路名、捷運站或商圈">
+        <button id="clear" type="button" aria-label="清除搜尋" hidden>×</button>
+      </label>
+      <div class="chips" id="timeFilters" aria-label="收費日期篩選">
+        <button type="button" class="chip active" data-filter="all">全部</button>
+        <button type="button" class="chip" data-filter="weekday">平日有收費</button>
+        <button type="button" class="chip" data-filter="daily">每日收費</button>
+        <button type="button" class="chip" data-filter="weekend">假日有收費</button>
+      </div>
+    </section>
+
+    <section class="summary" aria-live="polite">
+      <div><strong id="count">—</strong><span>個路段結果</span></div>
+      <button id="areasButton" type="button">選擇區域 <span aria-hidden="true">⌄</span></button>
+    </section>
+
+    <section id="results" class="results" aria-label="收費路段"></section>
+    <div id="empty" class="empty" hidden>
+      <div aria-hidden="true">⌕</div>
+      <h2>找不到符合的路段</h2>
+      <p>試試較短的路名，或清除篩選條件。</p>
+      <button type="button" id="reset">清除篩選</button>
+    </div>
+  </main>
+
+  <dialog id="areasDialog">
+    <form method="dialog">
+      <div class="sheet-head">
+        <h2>選擇區域</h2>
+        <button value="cancel" aria-label="關閉">×</button>
+      </div>
+      <div id="areaOptions" class="area-options"></div>
+      <button class="apply" id="applyArea" value="confirm">套用篩選</button>
+    </form>
+  </dialog>
+
+  <template id="cardTemplate">
+    <article class="card">
+      <div class="card-main">
+        <p class="area"></p>
+        <h2 class="road"></h2>
+        <p class="limits"></p>
+        <p class="time"><span aria-hidden="true">◷</span><span></span></p>
+      </div>
+      <a class="navigate" target="_blank" rel="noreferrer">導航</a>
+    </article>
+  </template>
+
+  <footer>
+    <p>資料：臺北市停車管理工程處，115 年 9 月製表。</p>
+    <p>清單僅供參考，收費仍以現場標誌牌面為準。</p>
+  </footer>
+  <script src="app.js" defer></script>
+</body>
+</html>
