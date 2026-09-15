@@ -155,9 +155,9 @@ function updateRuleNotice() {
   if (state.city === "台北市") {
     notice.innerHTML = "<strong>台北市：</strong>地圖列出官方公告的機車／大重機共用格。其他路段原則上應停小型車格或大重機專用格，不可任意停一般機車格。";
   } else if (state.city === "新北市") {
-    notice.innerHTML = "<strong>新北市：</strong>自 115 年 7 月 1 日起，全市路邊收費機車格開放大型重機；每 4 小時 30 元，可斜停或跨 2 格，但不得超出格線。";
+    notice.innerHTML = "<strong>新北市：</strong>板橋、新店的所有路邊機車格都可停大型重機，包含免費格；免費格不收費。其他行政區開放路邊收費機車格，每 4 小時 30 元。可斜停或跨 2 格，但不得超出格線。<span class=\"unmapped-note\">地圖暫無板橋、新店免費格的逐格座標，請依現場格線判斷。</span>";
   } else {
-    notice.innerHTML = "<strong>雙北規則不同：</strong>台北僅公告共用機車格可停；其他情況停小型車格或專用格。新北全市路邊收費機車格已開放大型重機，每 4 小時 30 元。";
+    notice.innerHTML = "<strong>雙北規則不同：</strong>台北僅公告共用機車格可停；其他情況停小型車格或專用格。新北全市路邊收費機車格已開放；板橋、新店另包含免費路邊機車格，停免費格不收費。<span class=\"unmapped-note\">板橋、新店免費格目前沒有逐格公開座標，請依現場格線判斷。</span>";
   }
 }
 
