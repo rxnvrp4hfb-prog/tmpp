@@ -200,6 +200,28 @@ main { width: min(760px, 100%); margin: 0 auto; }
   cursor: pointer;
 }
 .city-button.active { background: white; color: var(--ink); box-shadow: 0 2px 7px rgb(16 24 38 / 10%); }
+.vehicle-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.vehicle-button {
+  min-height: 43px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  color: var(--muted);
+  font-weight: 800;
+  cursor: pointer;
+}
+.vehicle-button.active { border-color: #6d42bf; background: #f1ebff; color: #5930a6; }
+.rule-notice {
+  margin: 12px 12px 0;
+  border: 1px solid #d9c9fa;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #f7f3ff;
+  color: #49316f;
+  font-size: .83rem;
+  line-height: 1.55;
+}
+.rule-notice strong { color: #321a5d; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   flex: 0 0 auto;

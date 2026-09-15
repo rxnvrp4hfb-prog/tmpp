@@ -1,4 +1,4 @@
-const state = { data: [], query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null, landmark: null, landmarkMarker: null };
+const state = { data: [], heavyData: [], vehicle: "scooter", query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null, landmark: null, landmarkMarker: null };
 const $ = (selector) => document.querySelector(selector);
 const results = $("#results");
 const template = $("#cardTemplate");
@@ -21,7 +21,7 @@ function timeMatches(value) {
 
 function filteredData() {
   const needle = normalize(state.query);
-  const matches = state.data.filter((item) => {
+  const matches = currentData().filter((item) => {
     const matchesText = !needle || normalize(`${item.area}${item.road}${item.limits}${item.time}`).includes(needle);
     const matchesArea = !state.areas.size || state.areas.has(item.area);
     const matchesCity = state.city === "all" || item.city === state.city;
@@ -31,6 +31,10 @@ function filteredData() {
     matches.sort((a, b) => distanceKm(state.landmark, a) - distanceKm(state.landmark, b));
   }
   return matches;
+}
+
+function currentData() {
+  return state.vehicle === "heavy" ? state.heavyData : state.data;
 }
 
 function distanceKm(origin, item) {
@@ -74,7 +78,7 @@ function renderMap(matches) {
   matches.filter((item) => item.lat && item.lng).forEach((item) => {
     const icon = L.divIcon({ className: `parking-dot ${item.city === "新北市" ? "newtaipei" : "taipei"}`, iconSize: [16, 16] });
     L.marker([item.lat, item.lng], { icon })
-      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.area)}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
+      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.area)}${item.spaceType ? `・${escapeHtml(item.spaceType)}` : ""}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}${item.rule ? `<br>${escapeHtml(item.rule)}` : ""}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
       .addTo(state.markerLayer);
   });
 }
@@ -88,7 +92,7 @@ function render() {
   const fragment = document.createDocumentFragment();
   matches.slice(0, state.visible).forEach((item, index) => {
     const card = template.content.cloneNode(true);
-    card.querySelector(".area").textContent = `${item.city}・${item.area}`;
+    card.querySelector(".area").textContent = `${item.city}・${item.area}${item.spaceType ? `・${item.spaceType}` : ""}`;
     card.querySelector(".road").textContent = item.road;
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
@@ -133,14 +137,28 @@ function resetVisibleAndRender() { state.visible = 60; render(); }
 
 function buildAreaOptions() {
   const counts = new Map();
-  state.data.forEach(({ area }) => counts.set(area, (counts.get(area) || 0) + 1));
+  currentData().forEach(({ area }) => counts.set(area, (counts.get(area) || 0) + 1));
   const container = $("#areaOptions");
+  container.replaceChildren();
   [...counts].sort((a, b) => a[0].localeCompare(b[0], "zh-Hant")).forEach(([area, count]) => {
     const label = document.createElement("label");
     label.className = "area-option";
     label.innerHTML = `<input type="checkbox" value="${area.replaceAll('"', '&quot;')}"><span>${area}（${count}）</span>`;
     container.append(label);
   });
+}
+
+function updateRuleNotice() {
+  const notice = $("#ruleNotice");
+  notice.hidden = state.vehicle !== "heavy";
+  if (notice.hidden) return;
+  if (state.city === "台北市") {
+    notice.innerHTML = "<strong>台北市：</strong>地圖列出官方公告的機車／大重機共用格。其他路段原則上應停小型車格或大重機專用格，不可任意停一般機車格。";
+  } else if (state.city === "新北市") {
+    notice.innerHTML = "<strong>新北市：</strong>自 115 年 7 月 1 日起，全市路邊收費機車格開放大型重機；每 4 小時 30 元，可斜停或跨 2 格，但不得超出格線。";
+  } else {
+    notice.innerHTML = "<strong>雙北規則不同：</strong>台北僅公告共用機車格可停；其他情況停小型車格或專用格。新北全市路邊收費機車格已開放大型重機，每 4 小時 30 元。";
+  }
 }
 
 search.addEventListener("input", () => {
@@ -173,7 +191,20 @@ $("#cityFilters").addEventListener("click", (event) => {
   state.areas.clear();
   document.querySelectorAll("#areaOptions input").forEach((input) => { input.checked = false; });
   $("#areasButton").firstChild.textContent = "選擇區域 ";
+  updateRuleNotice();
   if (state.map) state.map.flyTo(state.city === "新北市" ? [25.03, 121.46] : state.city === "台北市" ? [25.0478, 121.5319] : [25.058, 121.505], state.city === "all" ? 11 : 12);
+  resetVisibleAndRender();
+});
+
+$("#vehicleFilters").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-vehicle]");
+  if (!button) return;
+  state.vehicle = button.dataset.vehicle;
+  document.querySelectorAll(".vehicle-button").forEach((item) => item.classList.toggle("active", item === button));
+  state.areas.clear();
+  $("#areasButton").firstChild.textContent = "選擇區域 ";
+  buildAreaOptions();
+  updateRuleNotice();
   resetVisibleAndRender();
 });
 
@@ -192,10 +223,14 @@ $("#reset").addEventListener("click", () => {
   state.query = "";
   state.filter = "all";
   state.city = "all";
+  state.vehicle = "scooter";
   state.areas.clear();
   document.querySelectorAll("#areaOptions input").forEach((input) => { input.checked = false; });
   document.querySelectorAll(".chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.filter === "all"));
   document.querySelectorAll(".city-button").forEach((button) => button.classList.toggle("active", button.dataset.city === "all"));
+  document.querySelectorAll(".vehicle-button").forEach((button) => button.classList.toggle("active", button.dataset.vehicle === "scooter"));
+  buildAreaOptions();
+  updateRuleNotice();
   $("#areasButton").firstChild.textContent = "選擇區域 ";
   resetVisibleAndRender();
 });
@@ -265,17 +300,18 @@ $("#landmark").addEventListener("click", findLandmark);
 
 initMap();
 
-Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json")])
+Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json"), fetch("data/heavy-routes.json")])
   .then(async (responses) => {
     if (responses.some((response) => !response.ok)) throw new Error("資料載入失敗");
-    const [taipei, newTaipei] = await Promise.all(responses.map((response) => response.json()));
-    return [
+    const [taipei, newTaipei, heavy] = await Promise.all(responses.map((response) => response.json()));
+    return { general: [
       ...taipei.map((item) => ({ ...item, city: "台北市" })),
       ...newTaipei,
-    ];
+    ], heavy };
   })
-  .then((data) => {
-    state.data = data.filter((item) => item.road && item.time);
+  .then(({ general, heavy }) => {
+    state.data = general.filter((item) => item.road && item.time);
+    state.heavyData = heavy.filter((item) => item.road && item.time);
     buildAreaOptions();
     render();
   })
