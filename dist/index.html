@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#101826">
   <meta name="description" content="查詢台北市路邊收費機車停車格的路段、範圍與收費時間。">
   <title>台北路邊機車收費格</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -30,6 +31,12 @@
         <button type="button" class="chip" data-filter="daily">每日收費</button>
         <button type="button" class="chip" data-filter="weekend">假日有收費</button>
       </div>
+    </section>
+
+    <section class="map-wrap" aria-label="收費機車格地圖">
+      <div id="map"></div>
+      <button id="locate" type="button" class="locate" aria-label="移到我的位置">◎ <span>我的位置</span></button>
+      <p class="map-note">橘點為收費路段代表位置，請以路段範圍及現場牌面為準</p>
     </section>
 
     <section class="summary" aria-live="polite">
@@ -73,6 +80,7 @@
     <p>資料：臺北市停車管理工程處，115 年 9 月製表。</p>
     <p>清單僅供參考，收費仍以現場標誌牌面為準。</p>
   </footer>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

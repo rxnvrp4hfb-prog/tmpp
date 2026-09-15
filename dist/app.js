@@ -1,4 +1,4 @@
-const state = { data: [], query: "", filter: "all", areas: new Set(), visible: 60 };
+const state = { data: [], query: "", filter: "all", areas: new Set(), visible: 60, map: null, markerLayer: null };
 const $ = (selector) => document.querySelector(selector);
 const results = $("#results");
 const template = $("#cardTemplate");
@@ -30,8 +30,37 @@ function mapUrl(item) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
+}
+
+function initMap() {
+  if (!window.L) {
+    $(".map-note").textContent = "地圖載入失敗，仍可使用下方路段清單";
+    return;
+  }
+  state.map = L.map("map", { zoomControl: true }).setView([25.0478, 121.5319], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap"
+  }).addTo(state.map);
+  state.markerLayer = L.layerGroup().addTo(state.map);
+}
+
+function renderMap(matches) {
+  if (!state.markerLayer) return;
+  state.markerLayer.clearLayers();
+  const icon = L.divIcon({ className: "parking-dot", iconSize: [16, 16] });
+  matches.filter((item) => item.lat && item.lng).forEach((item) => {
+    L.marker([item.lat, item.lng], { icon })
+      .bindPopup(`<div class="popup-road">${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}</div>`)
+      .addTo(state.markerLayer);
+  });
+}
+
 function render() {
   const matches = filteredData();
+  renderMap(matches);
   $("#count").textContent = matches.length.toLocaleString("zh-TW");
   results.replaceChildren();
   const fragment = document.createDocumentFragment();
@@ -42,7 +71,16 @@ function render() {
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
     card.querySelector(".navigate").href = mapUrl(item);
-    card.querySelector(".card").style.animationDelay = `${Math.min(index, 8) * 25}ms`;
+    const cardElement = card.querySelector(".card");
+    cardElement.style.animationDelay = `${Math.min(index, 8) * 25}ms`;
+    cardElement.dataset.mappable = Boolean(item.lat && item.lng);
+    if (item.lat && item.lng) {
+      cardElement.addEventListener("click", (event) => {
+        if (event.target.closest("a")) return;
+        state.map?.flyTo([item.lat, item.lng], 17, { duration: .7 });
+        document.querySelector(".map-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
     fragment.append(card);
   });
   results.append(fragment);
@@ -109,7 +147,30 @@ $("#reset").addEventListener("click", () => {
   resetVisibleAndRender();
 });
 
-fetch("data/parking.json")
+$("#locate").addEventListener("click", () => {
+  if (!navigator.geolocation || !state.map) return;
+  const button = $("#locate");
+  button.disabled = true;
+  button.querySelector("span").textContent = "定位中";
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      state.map.flyTo([coords.latitude, coords.longitude], 16, { duration: .8 });
+      L.circleMarker([coords.latitude, coords.longitude], { radius: 8, color: "#fff", weight: 3, fillColor: "#2775ea", fillOpacity: 1 }).addTo(state.map).bindPopup("你的位置").openPopup();
+      button.disabled = false;
+      button.querySelector("span").textContent = "我的位置";
+    },
+    () => {
+      button.disabled = false;
+      button.querySelector("span").textContent = "無法定位";
+      setTimeout(() => { button.querySelector("span").textContent = "我的位置"; }, 1800);
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+});
+
+initMap();
+
+fetch("data/parking-map.json")
   .then((response) => {
     if (!response.ok) throw new Error("資料載入失敗");
     return response.json();
