@@ -4,27 +4,32 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101826">
-  <meta name="description" content="查詢台北市路邊收費機車停車格的路段、範圍與收費時間。">
-  <title>台北路邊機車收費格</title>
+  <meta name="description" content="查詢台北市與新北市路邊收費機車停車格的路段、範圍與收費時間。">
+  <title>雙北路邊機車收費格</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">台北市・路邊・機車</p>
-      <h1>收費停車格查詢</h1>
+      <p class="eyebrow">台北市＋新北市・路邊・機車</p>
+      <h1>雙北收費停車格</h1>
     </div>
-    <a class="source-link" href="https://pma.gov.taipei/Content_List.aspx?n=0EC7D6A1032AA0D6" target="_blank" rel="noreferrer">官方資料</a>
+    <a class="source-link" href="#sources">資料來源</a>
   </header>
 
   <main>
     <section class="search-panel" aria-label="搜尋條件">
       <label class="search-box">
         <span aria-hidden="true">⌕</span>
-        <input id="search" type="search" inputmode="search" autocomplete="off" placeholder="搜尋路名、捷運站或商圈" aria-label="搜尋路名、捷運站或商圈">
+        <input id="search" type="search" inputmode="search" autocomplete="off" placeholder="搜尋行政區、路名、捷運站或商圈" aria-label="搜尋行政區、路名、捷運站或商圈">
         <button id="clear" type="button" aria-label="清除搜尋" hidden>×</button>
       </label>
+      <div class="city-switch" id="cityFilters" aria-label="縣市篩選">
+        <button type="button" class="city-button active" data-city="all">雙北全部</button>
+        <button type="button" class="city-button" data-city="台北市">台北市</button>
+        <button type="button" class="city-button" data-city="新北市">新北市</button>
+      </div>
       <div class="chips" id="timeFilters" aria-label="收費日期篩選">
         <button type="button" class="chip active" data-filter="all">全部</button>
         <button type="button" class="chip" data-filter="weekday">平日有收費</button>
@@ -36,7 +41,8 @@
     <section class="map-wrap" aria-label="收費機車格地圖">
       <div id="map"></div>
       <button id="locate" type="button" class="locate" aria-label="移到我的位置">◎ <span>我的位置</span></button>
-      <p class="map-note">橘點為收費路段代表位置，請以路段範圍及現場牌面為準</p>
+      <div class="map-legend"><span><i class="taipei"></i>台北市</span><span><i class="newtaipei"></i>新北市</span></div>
+      <p class="map-note">標記為收費路段代表位置，請以路段範圍及現場牌面為準</p>
     </section>
 
     <section class="summary" aria-live="polite">
@@ -76,9 +82,10 @@
     </article>
   </template>
 
-  <footer>
-    <p>資料：臺北市停車管理工程處，115 年 9 月製表。</p>
+  <footer id="sources">
+    <p>資料：臺北市停車管理工程處、新北市政府交通局。</p>
     <p>清單僅供參考，收費仍以現場標誌牌面為準。</p>
+    <p><a href="https://pma.gov.taipei/Content_List.aspx?n=0EC7D6A1032AA0D6" target="_blank" rel="noreferrer">台北市官方清單</a>・<a href="https://parkweb.traffic.ntpc.gov.tw/route.aspx" target="_blank" rel="noreferrer">新北市官方清單</a></p>
   </footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js" defer></script>

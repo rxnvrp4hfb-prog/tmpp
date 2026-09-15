@@ -1,4 +1,4 @@
-const state = { data: [], query: "", filter: "all", areas: new Set(), visible: 60, map: null, markerLayer: null };
+const state = { data: [], query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null };
 const $ = (selector) => document.querySelector(selector);
 const results = $("#results");
 const template = $("#cardTemplate");
@@ -12,8 +12,11 @@ function normalize(value) {
 function timeMatches(value) {
   if (state.filter === "all") return true;
   if (state.filter === "daily") return value.includes("週一至日");
-  if (state.filter === "weekend") return /週六|週日|假日|週一至日/.test(value);
-  return /週一至五|週一至六|週一至日/.test(value);
+  if (state.filter === "weekend") {
+    if (value.includes("假日")) return !/假日\s*無收費/.test(value);
+    return /週六|週日|週一至日/.test(value);
+  }
+  return /平日|週一至五|週一至六|週一至日/.test(value);
 }
 
 function filteredData() {
@@ -21,7 +24,8 @@ function filteredData() {
   return state.data.filter((item) => {
     const matchesText = !needle || normalize(`${item.area}${item.road}${item.limits}${item.time}`).includes(needle);
     const matchesArea = !state.areas.size || state.areas.has(item.area);
-    return matchesText && matchesArea && timeMatches(item.time);
+    const matchesCity = state.city === "all" || item.city === state.city;
+    return matchesText && matchesArea && matchesCity && timeMatches(item.time);
   });
 }
 
@@ -42,7 +46,7 @@ function initMap() {
     $(".map-note").textContent = "地圖載入失敗，仍可使用下方路段清單";
     return;
   }
-  state.map = L.map("map", { zoomControl: true }).setView([25.0478, 121.5319], 12);
+  state.map = L.map("map", { zoomControl: true }).setView([25.058, 121.505], 11);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "© OpenStreetMap"
@@ -53,10 +57,10 @@ function initMap() {
 function renderMap(matches) {
   if (!state.markerLayer) return;
   state.markerLayer.clearLayers();
-  const icon = L.divIcon({ className: "parking-dot", iconSize: [16, 16] });
   matches.filter((item) => item.lat && item.lng).forEach((item) => {
+    const icon = L.divIcon({ className: `parking-dot ${item.city === "新北市" ? "newtaipei" : "taipei"}`, iconSize: [16, 16] });
     L.marker([item.lat, item.lng], { icon })
-      .bindPopup(`<div class="popup-road">${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
+      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.area)}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
       .addTo(state.markerLayer);
   });
 }
@@ -69,7 +73,7 @@ function render() {
   const fragment = document.createDocumentFragment();
   matches.slice(0, state.visible).forEach((item, index) => {
     const card = template.content.cloneNode(true);
-    card.querySelector(".area").textContent = item.area;
+    card.querySelector(".area").textContent = `${item.city}・${item.area}`;
     card.querySelector(".road").textContent = item.road;
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
@@ -133,6 +137,18 @@ $("#timeFilters").addEventListener("click", (event) => {
   resetVisibleAndRender();
 });
 
+$("#cityFilters").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-city]");
+  if (!button) return;
+  document.querySelectorAll(".city-button").forEach((item) => item.classList.toggle("active", item === button));
+  state.city = button.dataset.city;
+  state.areas.clear();
+  document.querySelectorAll("#areaOptions input").forEach((input) => { input.checked = false; });
+  $("#areasButton").firstChild.textContent = "選擇區域 ";
+  if (state.map) state.map.flyTo(state.city === "新北市" ? [25.03, 121.46] : state.city === "台北市" ? [25.0478, 121.5319] : [25.058, 121.505], state.city === "all" ? 11 : 12);
+  resetVisibleAndRender();
+});
+
 $("#areasButton").addEventListener("click", () => $("#areasDialog").showModal());
 $("#areasDialog").addEventListener("close", () => {
   if ($("#areasDialog").returnValue !== "confirm") return;
@@ -146,9 +162,11 @@ $("#reset").addEventListener("click", () => {
   clear.hidden = true;
   state.query = "";
   state.filter = "all";
+  state.city = "all";
   state.areas.clear();
   document.querySelectorAll("#areaOptions input").forEach((input) => { input.checked = false; });
   document.querySelectorAll(".chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.filter === "all"));
+  document.querySelectorAll(".city-button").forEach((button) => button.classList.toggle("active", button.dataset.city === "all"));
   $("#areasButton").firstChild.textContent = "選擇區域 ";
   resetVisibleAndRender();
 });
@@ -176,10 +194,14 @@ $("#locate").addEventListener("click", () => {
 
 initMap();
 
-fetch("data/parking-map.json")
-  .then((response) => {
-    if (!response.ok) throw new Error("資料載入失敗");
-    return response.json();
+Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json")])
+  .then(async (responses) => {
+    if (responses.some((response) => !response.ok)) throw new Error("資料載入失敗");
+    const [taipei, newTaipei] = await Promise.all(responses.map((response) => response.json()));
+    return [
+      ...taipei.map((item) => ({ ...item, city: "台北市" })),
+      ...newTaipei,
+    ];
   })
   .then((data) => {
     state.data = data.filter((item) => item.road && item.time);

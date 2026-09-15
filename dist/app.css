@@ -76,6 +76,7 @@ main { width: min(760px, 100%); margin: 0 auto; }
   background: var(--accent);
   box-shadow: 0 2px 7px rgb(16 24 38 / 35%);
 }
+.parking-dot.newtaipei { background: #2f74d0; }
 .locate {
   position: absolute;
   z-index: 500;
@@ -108,6 +109,24 @@ main { width: min(760px, 100%); margin: 0 auto; }
   font-size: .7rem;
   text-align: center;
 }
+.map-legend {
+  position: absolute;
+  z-index: 450;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  gap: 9px;
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 2px 10px rgb(16 24 38 / 15%);
+  color: #425168;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.map-legend span { display: flex; align-items: center; gap: 5px; }
+.map-legend i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.map-legend i.newtaipei { background: #2f74d0; }
 .popup-road { font-size: .95rem; font-weight: 800; }
 .popup-meta { margin-top: 4px; color: #526278; font-size: .8rem; line-height: 1.45; }
 .popup-nav {
@@ -152,6 +171,25 @@ main { width: min(760px, 100%); margin: 0 auto; }
   padding-bottom: 3px;
   scrollbar-width: none;
 }
+.city-switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 4px;
+  background: var(--paper);
+}
+.city-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 750;
+  cursor: pointer;
+}
+.city-button.active { background: white; color: var(--ink); box-shadow: 0 2px 7px rgb(16 24 38 / 10%); }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   flex: 0 0 auto;
@@ -233,6 +271,7 @@ dialog form { padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
 
 footer { padding: 4px 20px calc(30px + env(safe-area-inset-bottom)); color: var(--muted); font-size: .78rem; line-height: 1.55; text-align: center; }
 footer p { margin: 3px 0; }
+footer a { color: var(--accent-dark); }
 
 @media (min-width: 700px) {
   .topbar { position: relative; padding-inline: max(24px, calc((100% - 760px) / 2)); }
