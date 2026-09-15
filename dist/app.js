@@ -26,6 +26,9 @@ function filteredData() {
 }
 
 function mapUrl(item) {
+  if (Number.isFinite(item.lat) && Number.isFinite(item.lng)) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&travelmode=driving`;
+  }
   const query = `台北市 ${item.road} ${item.limits.split("-")[0]} 機車停車格`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
@@ -53,7 +56,7 @@ function renderMap(matches) {
   const icon = L.divIcon({ className: "parking-dot", iconSize: [16, 16] });
   matches.filter((item) => item.lat && item.lng).forEach((item) => {
     L.marker([item.lat, item.lng], { icon })
-      .bindPopup(`<div class="popup-road">${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}</div>`)
+      .bindPopup(`<div class="popup-road">${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
       .addTo(state.markerLayer);
   });
 }
@@ -70,7 +73,10 @@ function render() {
     card.querySelector(".road").textContent = item.road;
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
-    card.querySelector(".navigate").href = mapUrl(item);
+    const navigate = card.querySelector(".navigate");
+    navigate.href = mapUrl(item);
+    navigate.textContent = item.lat && item.lng ? "座標導航" : "搜尋地點";
+    navigate.setAttribute("aria-label", item.lat && item.lng ? `導航至 ${item.road} 的座標位置` : `在地圖搜尋 ${item.road}`);
     const cardElement = card.querySelector(".card");
     cardElement.style.animationDelay = `${Math.min(index, 8) * 25}ms`;
     cardElement.dataset.mappable = Boolean(item.lat && item.lng);

@@ -110,6 +110,17 @@ main { width: min(760px, 100%); margin: 0 auto; }
 }
 .popup-road { font-size: .95rem; font-weight: 800; }
 .popup-meta { margin-top: 4px; color: #526278; font-size: .8rem; line-height: 1.45; }
+.popup-nav {
+  display: inline-block;
+  margin-top: 9px;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: var(--accent);
+  color: white !important;
+  font-size: .8rem;
+  font-weight: 800;
+  text-decoration: none;
+}
 
 .search-panel {
   padding: 16px 16px 11px;
