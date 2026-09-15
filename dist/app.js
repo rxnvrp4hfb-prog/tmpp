@@ -4,6 +4,11 @@ const results = $("#results");
 const template = $("#cardTemplate");
 const search = $("#search");
 const clear = $("#clear");
+const TAIPEI_HEAVY_EFFECTIVE = new Date(2026, 9, 6);
+
+function isUpcoming(item) {
+  return item.effectiveDate && new Date(`${item.effectiveDate}T00:00:00+08:00`) > new Date();
+}
 
 function normalize(value) {
   return String(value || "").toLocaleLowerCase("zh-Hant").replace(/臺/g, "台").replace(/\s+/g, "");
@@ -76,9 +81,9 @@ function renderMap(matches) {
   if (!state.markerLayer) return;
   state.markerLayer.clearLayers();
   matches.filter((item) => item.lat && item.lng).forEach((item) => {
-    const icon = L.divIcon({ className: `parking-dot ${item.city === "新北市" ? "newtaipei" : "taipei"}`, iconSize: [16, 16] });
+    const icon = L.divIcon({ className: `parking-dot ${item.city === "新北市" ? "newtaipei" : "taipei"}${isUpcoming(item) ? " upcoming" : ""}`, iconSize: [16, 16] });
     L.marker([item.lat, item.lng], { icon })
-      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.area)}${item.spaceType ? `・${escapeHtml(item.spaceType)}` : ""}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}${item.rule ? `<br>${escapeHtml(item.rule)}` : ""}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
+      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${isUpcoming(item) ? "<strong>2026/10/6 起開放</strong><br>" : ""}${escapeHtml(item.area)}${item.spaceType ? `・${escapeHtml(item.spaceType)}` : ""}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}${item.rule ? `<br>${escapeHtml(item.rule)}` : ""}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
       .addTo(state.markerLayer);
   });
 }
@@ -92,7 +97,7 @@ function render() {
   const fragment = document.createDocumentFragment();
   matches.slice(0, state.visible).forEach((item, index) => {
     const card = template.content.cloneNode(true);
-    card.querySelector(".area").textContent = `${item.city}・${item.area}${item.spaceType ? `・${item.spaceType}` : ""}`;
+    card.querySelector(".area").textContent = `${isUpcoming(item) ? "10/6 起開放・" : ""}${item.city}・${item.area}${item.spaceType ? `・${item.spaceType}` : ""}`;
     card.querySelector(".road").textContent = item.road;
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
@@ -153,11 +158,11 @@ function updateRuleNotice() {
   notice.hidden = state.vehicle !== "heavy";
   if (notice.hidden) return;
   if (state.city === "台北市") {
-    notice.innerHTML = "<strong>台北市：</strong>地圖列出官方公告的機車／大重機共用格。其他路段原則上應停小型車格或大重機專用格，不可任意停一般機車格。";
+    notice.innerHTML = "<strong>台北市 10/6 新制：</strong>2026 年 10 月 6 日起，紅牌、黃牌可停全市約 6.3 萬席公有路邊收費機車格，可斜停最多 2 格，每次 40 元。<span class=\"unmapped-note\">新制生效前，僅可停現行已公告共用格、汽車格或大重機專用格；免費機車格不在本次開放範圍。</span>";
   } else if (state.city === "新北市") {
     notice.innerHTML = "<strong>新北市：</strong>板橋、新店的所有路邊機車格都可停大型重機，包含免費格；免費格不收費。其他行政區開放路邊收費機車格，每 4 小時 30 元。可斜停或跨 2 格，但不得超出格線。<span class=\"unmapped-note\">地圖暫無板橋、新店免費格的逐格座標，請依現場格線判斷。</span>";
   } else {
-    notice.innerHTML = "<strong>雙北規則不同：</strong>台北僅公告共用機車格可停；其他情況停小型車格或專用格。新北全市路邊收費機車格已開放；板橋、新店另包含免費路邊機車格，停免費格不收費。<span class=\"unmapped-note\">板橋、新店免費格目前沒有逐格公開座標，請依現場格線判斷。</span>";
+    notice.innerHTML = "<strong>雙北規則不同：</strong>台北自 2026/10/6 起開放全市公有路邊收費機車格，每次 40 元；生效前仍只能停現行已公告共用格。新北全市路邊收費機車格已開放；板橋、新店另包含免費路邊機車格。<span class=\"unmapped-note\">板橋、新店免費格目前沒有逐格公開座標，請依現場格線判斷。</span>";
   }
 }
 
@@ -304,10 +309,20 @@ Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json"), fet
   .then(async (responses) => {
     if (responses.some((response) => !response.ok)) throw new Error("資料載入失敗");
     const [taipei, newTaipei, heavy] = await Promise.all(responses.map((response) => response.json()));
+    const taipeiHeavy = taipei.map((item) => ({
+      ...item,
+      city: "台北市",
+      vehicle: "heavy",
+      spaceType: "公有路邊收費機車格",
+      effectiveDate: "2026-10-06",
+      price: "40元/次",
+      rule: "2026/10/6 起紅黃牌可斜停最多2格・40元/次",
+    }));
+    const retainedHeavy = new Date() >= TAIPEI_HEAVY_EFFECTIVE ? heavy.filter((item) => item.city !== "台北市") : heavy;
     return { general: [
       ...taipei.map((item) => ({ ...item, city: "台北市" })),
       ...newTaipei,
-    ], heavy };
+    ], heavy: [...retainedHeavy, ...taipeiHeavy] };
   })
   .then(({ general, heavy }) => {
     state.data = general.filter((item) => item.road && item.time);

@@ -77,6 +77,7 @@ main { width: min(760px, 100%); margin: 0 auto; }
   box-shadow: 0 2px 7px rgb(16 24 38 / 35%);
 }
 .parking-dot.newtaipei { background: #2f74d0; }
+.parking-dot.upcoming { border-style: dashed; background: #f59e0b; }
 .locate {
   position: absolute;
   z-index: 500;
