@@ -12,7 +12,12 @@ function normalize(value) {
 
 function timeMatches(value) {
   if (state.filter === "all") return true;
-  if (state.filter === "daily") return value.includes("週一至日");
+  if (state.filter === "daily") {
+    if (/週一至日|每日/.test(value)) return true;
+    const weekdayCharged = /平日/.test(value) && !/平日\s*無收費/.test(value);
+    const holidayCharged = /假日/.test(value) && !/假日\s*無收費/.test(value);
+    return weekdayCharged && holidayCharged;
+  }
   if (state.filter === "weekend") {
     if (value.includes("假日")) return !/假日\s*無收費/.test(value);
     return /週六|週日|週一至日/.test(value);
