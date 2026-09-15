@@ -6,10 +6,6 @@ const search = $("#search");
 const clear = $("#clear");
 const TAIPEI_HEAVY_EFFECTIVE = new Date(2026, 9, 6);
 
-function isUpcoming(item) {
-  return item.effectiveDate && new Date(`${item.effectiveDate}T00:00:00+08:00`) > new Date();
-}
-
 function normalize(value) {
   return String(value || "").toLocaleLowerCase("zh-Hant").replace(/臺/g, "台").replace(/\s+/g, "");
 }
@@ -81,9 +77,9 @@ function renderMap(matches) {
   if (!state.markerLayer) return;
   state.markerLayer.clearLayers();
   matches.filter((item) => item.lat && item.lng).forEach((item) => {
-    const icon = L.divIcon({ className: `parking-dot ${item.city === "新北市" ? "newtaipei" : "taipei"}${isUpcoming(item) ? " upcoming" : ""}`, iconSize: [16, 16] });
+    const icon = L.divIcon({ className: `parking-dot ${item.city === "新北市" ? "newtaipei" : "taipei"}`, iconSize: [16, 16] });
     L.marker([item.lat, item.lng], { icon })
-      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${isUpcoming(item) ? "<strong>2026/10/6 起開放</strong><br>" : ""}${escapeHtml(item.area)}${item.spaceType ? `・${escapeHtml(item.spaceType)}` : ""}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}${item.rule ? `<br>${escapeHtml(item.rule)}` : ""}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
+      .bindPopup(`<div class="popup-road">${escapeHtml(item.city)}・${escapeHtml(item.road)}</div><div class="popup-meta">${escapeHtml(item.area)}${item.spaceType ? `・${escapeHtml(item.spaceType)}` : ""}<br>${escapeHtml(item.limits)}<br>${escapeHtml(item.time)}${item.rule ? `<br>${escapeHtml(item.rule)}` : ""}</div><a class="popup-nav" href="${mapUrl(item)}" target="_blank" rel="noreferrer">用座標開始導航</a>`)
       .addTo(state.markerLayer);
   });
 }
@@ -97,7 +93,7 @@ function render() {
   const fragment = document.createDocumentFragment();
   matches.slice(0, state.visible).forEach((item, index) => {
     const card = template.content.cloneNode(true);
-    card.querySelector(".area").textContent = `${isUpcoming(item) ? "10/6 起開放・" : ""}${item.city}・${item.area}${item.spaceType ? `・${item.spaceType}` : ""}`;
+    card.querySelector(".area").textContent = `${item.city}・${item.area}${item.spaceType ? `・${item.spaceType}` : ""}`;
     card.querySelector(".road").textContent = item.road;
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
@@ -318,11 +314,12 @@ Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json"), fet
       price: "40元/次",
       rule: "2026/10/6 起紅黃牌可斜停最多2格・40元/次",
     }));
-    const retainedHeavy = new Date() >= TAIPEI_HEAVY_EFFECTIVE ? heavy.filter((item) => item.city !== "台北市") : heavy;
+    const newRuleIsActive = new Date() >= TAIPEI_HEAVY_EFFECTIVE;
+    const retainedHeavy = newRuleIsActive ? heavy.filter((item) => item.city !== "台北市") : heavy;
     return { general: [
       ...taipei.map((item) => ({ ...item, city: "台北市" })),
       ...newTaipei,
-    ], heavy: [...retainedHeavy, ...taipeiHeavy] };
+    ], heavy: newRuleIsActive ? [...retainedHeavy, ...taipeiHeavy] : retainedHeavy };
   })
   .then(({ general, heavy }) => {
     state.data = general.filter((item) => item.road && item.time);
