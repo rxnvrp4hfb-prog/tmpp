@@ -22,8 +22,9 @@
     <section class="search-panel" aria-label="搜尋條件">
       <label class="search-box">
         <span aria-hidden="true">⌕</span>
-        <input id="search" type="search" inputmode="search" autocomplete="off" placeholder="搜尋行政區、路名、捷運站或商圈" aria-label="搜尋行政區、路名、捷運站或商圈">
+        <input id="search" type="search" inputmode="search" autocomplete="off" placeholder="路名或地標，例如台北車站" aria-label="搜尋路名或地標">
         <button id="clear" type="button" aria-label="清除搜尋" hidden>×</button>
+        <button id="landmark" type="button">找地標</button>
       </label>
       <div class="city-switch" id="cityFilters" aria-label="縣市篩選">
         <button type="button" class="city-button active" data-city="all">雙北全部</button>
@@ -47,6 +48,7 @@
 
     <section class="summary" aria-live="polite">
       <div><strong id="count">—</strong><span>個路段結果</span></div>
+      <span id="sortStatus" class="sort-status" hidden>依距離排序</span>
       <button id="areasButton" type="button">選擇區域 <span aria-hidden="true">⌄</span></button>
     </section>
 
@@ -77,6 +79,7 @@
         <h2 class="road"></h2>
         <p class="limits"></p>
         <p class="time"><span aria-hidden="true">◷</span><span></span></p>
+        <p class="distance" hidden></p>
       </div>
       <a class="navigate" target="_blank" rel="noreferrer">導航</a>
     </article>

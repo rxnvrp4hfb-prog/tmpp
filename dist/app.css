@@ -149,7 +149,7 @@ main { width: min(760px, 100%); margin: 0 auto; }
 
 .search-box {
   display: grid;
-  grid-template-columns: 26px 1fr 32px;
+  grid-template-columns: 26px minmax(0, 1fr) 32px auto;
   align-items: center;
   min-height: 52px;
   padding: 0 10px 0 14px;
@@ -162,6 +162,16 @@ main { width: min(760px, 100%); margin: 0 auto; }
 .search-box > span { color: var(--muted); font-size: 1.45rem; }
 .search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 1rem; }
 .search-box button { border: 0; background: transparent; color: var(--muted); font-size: 1.45rem; cursor: pointer; }
+.search-box #landmark {
+  min-height: 38px;
+  border-radius: 10px;
+  padding: 0 11px;
+  background: var(--navy);
+  color: white;
+  font-size: .82rem;
+  font-weight: 800;
+}
+.search-box #landmark:disabled { opacity: .58; }
 
 .chips {
   display: flex;
@@ -212,6 +222,7 @@ main { width: min(760px, 100%); margin: 0 auto; }
 .summary div { display: flex; align-items: baseline; gap: 6px; color: var(--muted); font-size: .85rem; }
 .summary strong { color: var(--ink); font-size: 1.25rem; }
 .summary button { border: 0; background: transparent; color: var(--accent-dark); font-weight: 700; cursor: pointer; }
+.sort-status { color: #2365b9; font-size: .78rem; font-weight: 750; }
 
 .results { padding: 0 12px 20px; }
 .card {
@@ -233,6 +244,7 @@ main { width: min(760px, 100%); margin: 0 auto; }
 .limits { margin: 5px 0 10px; color: var(--muted); font-size: .9rem; line-height: 1.45; }
 .time { display: flex; align-items: center; gap: 6px; margin: 0; color: #33445c; font-size: .88rem; }
 .time > span:first-child { color: var(--accent); font-size: 1.08rem; }
+.distance { margin: 7px 0 0; color: #2365b9; font-size: .8rem; font-weight: 750; }
 .navigate {
   flex: 0 0 auto;
   border-radius: 12px;

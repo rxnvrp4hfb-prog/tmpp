@@ -1,4 +1,4 @@
-const state = { data: [], query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null };
+const state = { data: [], query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null, landmark: null, landmarkMarker: null };
 const $ = (selector) => document.querySelector(selector);
 const results = $("#results");
 const template = $("#cardTemplate");
@@ -21,12 +21,26 @@ function timeMatches(value) {
 
 function filteredData() {
   const needle = normalize(state.query);
-  return state.data.filter((item) => {
+  const matches = state.data.filter((item) => {
     const matchesText = !needle || normalize(`${item.area}${item.road}${item.limits}${item.time}`).includes(needle);
     const matchesArea = !state.areas.size || state.areas.has(item.area);
     const matchesCity = state.city === "all" || item.city === state.city;
     return matchesText && matchesArea && matchesCity && timeMatches(item.time);
   });
+  if (state.landmark) {
+    matches.sort((a, b) => distanceKm(state.landmark, a) - distanceKm(state.landmark, b));
+  }
+  return matches;
+}
+
+function distanceKm(origin, item) {
+  if (!item.lat || !item.lng) return Number.POSITIVE_INFINITY;
+  const radius = 6371;
+  const toRadians = (degrees) => degrees * Math.PI / 180;
+  const deltaLat = toRadians(item.lat - origin.lat);
+  const deltaLng = toRadians(item.lng - origin.lng);
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(toRadians(origin.lat)) * Math.cos(toRadians(item.lat)) * Math.sin(deltaLng / 2) ** 2;
+  return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function mapUrl(item) {
@@ -68,6 +82,7 @@ function renderMap(matches) {
 function render() {
   const matches = filteredData();
   renderMap(matches);
+  $("#sortStatus").hidden = !state.landmark;
   $("#count").textContent = matches.length.toLocaleString("zh-TW");
   results.replaceChildren();
   const fragment = document.createDocumentFragment();
@@ -77,6 +92,12 @@ function render() {
     card.querySelector(".road").textContent = item.road;
     card.querySelector(".limits").textContent = item.limits || "路段範圍依現場標誌";
     card.querySelector(".time span:last-child").textContent = item.time;
+    if (state.landmark && item.lat && item.lng) {
+      const distance = distanceKm(state.landmark, item);
+      const distanceElement = card.querySelector(".distance");
+      distanceElement.hidden = false;
+      distanceElement.textContent = distance < 1 ? `距離約 ${Math.round(distance * 1000)} 公尺` : `距離約 ${distance.toFixed(1)} 公里`;
+    }
     const navigate = card.querySelector(".navigate");
     navigate.href = mapUrl(item);
     navigate.textContent = item.lat && item.lng ? "座標導航" : "搜尋地點";
@@ -123,9 +144,16 @@ function buildAreaOptions() {
 }
 
 search.addEventListener("input", () => {
+  if (state.landmark) clearLandmark();
   state.query = search.value;
   clear.hidden = !search.value;
   resetVisibleAndRender();
+});
+search.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    findLandmark();
+  }
 });
 clear.addEventListener("click", () => { search.value = ""; search.dispatchEvent(new Event("input")); search.focus(); });
 
@@ -158,6 +186,7 @@ $("#areasDialog").addEventListener("close", () => {
 });
 
 $("#reset").addEventListener("click", () => {
+  clearLandmark();
   search.value = "";
   clear.hidden = true;
   state.query = "";
@@ -191,6 +220,48 @@ $("#locate").addEventListener("click", () => {
     { enableHighAccuracy: true, timeout: 8000 }
   );
 });
+
+function clearLandmark() {
+  state.landmark = null;
+  if (state.landmarkMarker && state.map) state.map.removeLayer(state.landmarkMarker);
+  state.landmarkMarker = null;
+}
+
+async function findLandmark() {
+  const query = search.value.trim();
+  if (!query || !state.map) return;
+  const button = $("#landmark");
+  button.disabled = true;
+  button.textContent = "搜尋中";
+  try {
+    const params = new URLSearchParams({ q: `${query} 台灣`, format: "jsonv2", limit: "5", countrycodes: "tw" });
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { headers: { "Accept-Language": "zh-TW" } });
+    if (!response.ok) throw new Error("搜尋失敗");
+    const data = await response.json();
+    const candidate = data.find((item) => Number(item.lat) >= 24.75 && Number(item.lat) <= 25.35 && Number(item.lon) >= 121.25 && Number(item.lon) <= 122.1);
+    if (!candidate) throw new Error("找不到地標");
+    const lat = Number(candidate.lat);
+    const lng = Number(candidate.lon);
+    clearLandmark();
+    state.landmark = { lat, lng, name: candidate.display_name || query };
+    state.query = "";
+    state.landmarkMarker = L.circleMarker([lat, lng], { radius: 10, color: "#fff", weight: 4, fillColor: "#101826", fillOpacity: 1 })
+      .addTo(state.map)
+      .bindPopup(`<strong>${escapeHtml(state.landmark.name)}</strong><br>附近收費機車格已依距離排序`)
+      .openPopup();
+    state.map.flyTo([lat, lng], 15, { duration: .8 });
+    resetVisibleAndRender();
+  } catch (error) {
+    button.textContent = error.message === "找不到地標" ? "找不到" : "再試一次";
+    setTimeout(() => { button.textContent = "找地標"; }, 1800);
+    return;
+  } finally {
+    button.disabled = false;
+  }
+  button.textContent = "找地標";
+}
+
+$("#landmark").addEventListener("click", findLandmark);
 
 initMap();
 
