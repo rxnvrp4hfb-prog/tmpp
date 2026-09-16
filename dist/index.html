@@ -4,22 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101826">
-  <meta name="description" content="查詢台北市與新北市路邊收費機車停車格的路段、範圍與收費時間。">
-  <title>雙北路邊機車收費格</title>
+  <meta name="description" content="查詢雙北路邊機車收費格，以及大型重型機車可停的公有路外停車場。">
+  <title>雙北機車停車地圖</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">台北市＋新北市・路邊・機車</p>
-      <h1>雙北收費停車格</h1>
+      <p class="eyebrow">台北市＋新北市・機車停車</p>
+      <h1>雙北機車停車地圖</h1>
     </div>
     <a class="source-link" href="#sources">資料來源</a>
   </header>
 
   <main>
     <section class="search-panel" aria-label="搜尋條件">
+      <div class="place-switch" id="placeFilters" aria-label="停車類型">
+        <button type="button" class="place-button active" data-place="road">路邊停車格</button>
+        <button type="button" class="place-button" data-place="lot">大重機停車場</button>
+      </div>
       <label class="search-box">
         <span aria-hidden="true">⌕</span>
         <input id="search" type="search" inputmode="search" autocomplete="off" placeholder="路名或地標，例如台北車站" aria-label="搜尋路名或地標">
@@ -53,7 +57,7 @@
     </section>
 
     <section class="summary" aria-live="polite">
-      <div><strong id="count">—</strong><span>個路段結果</span></div>
+      <div><strong id="count">—</strong><span id="resultUnit">個路段結果</span></div>
       <span id="sortStatus" class="sort-status" hidden>依距離排序</span>
       <button id="areasButton" type="button">選擇區域 <span aria-hidden="true">⌄</span></button>
     </section>
@@ -95,7 +99,7 @@
     <p>資料：臺北市停車管理工程處、新北市政府交通局。</p>
     <p>清單僅供參考，收費仍以現場標誌牌面為準。</p>
     <p><a href="https://pma.gov.taipei/Content_List.aspx?n=0EC7D6A1032AA0D6" target="_blank" rel="noreferrer">台北市官方清單</a>・<a href="https://parkweb.traffic.ntpc.gov.tw/route.aspx" target="_blank" rel="noreferrer">新北市官方清單</a></p>
-    <p><a href="https://dot.gov.taipei/News_Content.aspx?n=D739A9F6B5C0AB95&s=8BC5F23730A95E42&sms=72544237BBE4C5F6" target="_blank" rel="noreferrer">台北 2026/10/6 大重機新制</a>・<a href="https://www.traffic.ntpc.gov.tw/home.jsp?act=be4f48068b2b0031&dataserno=5afb8a39ee830226ea85f47a6239ac09&id=148" target="_blank" rel="noreferrer">板橋、新店大重機規則</a>・<a href="https://www.traffic.ntpc.gov.tw/home.jsp?act=be4f48068b2b0031&dataserno=abcdb076ecbaf042b9fc18941b52549f&id=c8529e1525d82126" target="_blank" rel="noreferrer">新北收費格規則</a></p>
+    <p><a href="https://dot.gov.taipei/News_Content.aspx?n=D739A9F6B5C0AB95&s=8BC5F23730A95E42&sms=72544237BBE4C5F6" target="_blank" rel="noreferrer">台北 2026/10/6 大重機新制</a>・<a href="https://dot.gov.taipei/News_Content.aspx?n=D739A9F6B5C0AB95&s=A65BDD5E3B218D8D" target="_blank" rel="noreferrer">台北 24 處路外試辦</a>・<a href="https://www.traffic.ntpc.gov.tw/home.jsp?act=be4f48068b2b0031&dataserno=dac9467f3186024b196c60d16e126690&id=3dc1607f17e5f70d" target="_blank" rel="noreferrer">新北公有路外規則</a>・<a href="https://www.traffic.ntpc.gov.tw/home.jsp?act=be4f48068b2b0031&dataserno=a97d10c96cfe06d2787fd15ef490884c&id=54fa46e9e522dde4&mserno=39e5192ff77897e0ae099c1886ca9b09" target="_blank" rel="noreferrer">新北 2 處機車區試辦</a></p>
   </footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js" defer></script>

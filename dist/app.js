@@ -1,4 +1,4 @@
-const state = { data: [], heavyData: [], vehicle: "scooter", query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null, landmark: null, landmarkMarker: null };
+const state = { data: [], heavyData: [], parkingLots: [], place: "road", vehicle: "scooter", query: "", filter: "all", city: "all", areas: new Set(), visible: 60, map: null, markerLayer: null, landmark: null, landmarkMarker: null };
 const $ = (selector) => document.querySelector(selector);
 const results = $("#results");
 const template = $("#cardTemplate");
@@ -40,6 +40,7 @@ function filteredData() {
 }
 
 function currentData() {
+  if (state.place === "lot") return state.parkingLots;
   return state.vehicle === "heavy" ? state.heavyData : state.data;
 }
 
@@ -156,6 +157,13 @@ function buildAreaOptions() {
 
 function updateRuleNotice() {
   const notice = $("#ruleNotice");
+  if (state.place === "lot") {
+    notice.hidden = false;
+    if (state.city === "台北市") notice.innerHTML = "<strong>台北 24 處機車區試辦：</strong>大型重機依標誌斜停，最多占 2 格，按各場機車費率 2 倍收費。試辦自 2026/4/6 起，官方原訂 6 個月，期滿是否延續請以現場公告為準。";
+    else if (state.city === "新北市") notice.innerHTML = "<strong>新北公有路外停車場：</strong>即使沒有大重機專用格，大型重機也可停小型車格，按汽車費率計費。地圖另列目前明確試辦可停一般機車格的 2 處停車場。";
+    else notice.innerHTML = "<strong>路外停車場規則：</strong>台北列出 24 處可停機車區的試辦場；新北所有轄管公有路外停車場的小型車格依法可停大型重機，地圖另列 2 處可停一般機車格的試辦場。<span class=\"unmapped-note\">停車前仍請確認入口限高、現場牌面與當日費率。</span>";
+    return;
+  }
   notice.hidden = state.vehicle !== "heavy";
   if (notice.hidden) return;
   if (state.city === "台北市") {
@@ -166,6 +174,23 @@ function updateRuleNotice() {
     notice.innerHTML = "<strong>雙北規則不同：</strong>台北自 2026/10/6 起開放全市公有路邊收費機車格，每次 40 元；生效前仍只能停現行已公告共用格。新北全市路邊收費機車格已開放；板橋、新店另包含免費路邊機車格。<span class=\"unmapped-note\">板橋、新店免費格目前沒有逐格公開座標，請依現場格線判斷。</span>";
   }
 }
+
+$("#placeFilters").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-place]");
+  if (!button) return;
+  state.place = button.dataset.place;
+  document.querySelectorAll(".place-button").forEach((item) => item.classList.toggle("active", item === button));
+  $("#vehicleFilters").hidden = state.place === "lot";
+  $("#timeFilters").hidden = state.place === "lot";
+  $("#resultUnit").textContent = state.place === "lot" ? "個停車場結果" : "個路段結果";
+  $(".map-note").textContent = state.place === "lot" ? "座標指向停車場位置，入口、費率與開放狀況請以現場為準" : "標記為收費路段代表位置，請以路段範圍及現場牌面為準";
+  search.placeholder = state.place === "lot" ? "停車場或地標，例如台北車站" : "路名或地標，例如台北車站";
+  state.filter = "all";
+  state.areas.clear();
+  buildAreaOptions();
+  updateRuleNotice();
+  resetVisibleAndRender();
+});
 
 search.addEventListener("input", () => {
   if (state.landmark) clearLandmark();
@@ -306,10 +331,10 @@ $("#landmark").addEventListener("click", findLandmark);
 
 initMap();
 
-Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json"), fetch("data/heavy-routes.json")])
+Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json"), fetch("data/heavy-routes.json"), fetch("data/heavy-parking-lots.json")])
   .then(async (responses) => {
     if (responses.some((response) => !response.ok)) throw new Error("資料載入失敗");
-    const [taipei, newTaipei, heavy] = await Promise.all(responses.map((response) => response.json()));
+    const [taipei, newTaipei, heavy, parkingLots] = await Promise.all(responses.map((response) => response.json()));
     const taipeiHeavy = taipei.map((item) => ({
       ...item,
       city: "台北市",
@@ -324,11 +349,12 @@ Promise.all([fetch("data/parking-map.json"), fetch("data/ntpc-routes.json"), fet
     return { general: [
       ...taipei.map((item) => ({ ...item, city: "台北市" })),
       ...newTaipei,
-    ], heavy: newRuleIsActive ? [...retainedHeavy, ...taipeiHeavy] : retainedHeavy };
+    ], heavy: newRuleIsActive ? [...retainedHeavy, ...taipeiHeavy] : retainedHeavy, parkingLots };
   })
-  .then(({ general, heavy }) => {
+  .then(({ general, heavy, parkingLots }) => {
     state.data = general.filter((item) => item.road && item.time);
     state.heavyData = heavy.filter((item) => item.road && item.time);
+    state.parkingLots = parkingLots.filter((item) => item.road && item.time);
     buildAreaOptions();
     render();
   })

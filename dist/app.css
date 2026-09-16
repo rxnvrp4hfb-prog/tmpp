@@ -190,6 +190,9 @@ main { width: min(760px, 100%); margin: 0 auto; }
   padding: 4px;
   background: var(--paper);
 }
+.place-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 12px; border-radius: 13px; padding: 4px; background: #e7edf5; }
+.place-button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 850; cursor: pointer; }
+.place-button.active { background: var(--navy); color: white; box-shadow: 0 3px 10px rgb(16 24 38 / 17%); }
 .city-button {
   min-height: 38px;
   border: 0;
